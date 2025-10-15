@@ -1,0 +1,94 @@
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+import json
+
+# Initialize SQLAlchemy
+db = SQLAlchemy()
+
+class Table(db.Model):
+    __tablename__ = 'tables'
+    
+    id = db.Column(db.String, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    seats = db.Column(db.Integer, nullable=False)
+    category = db.Column(db.String, nullable=False)
+    status = db.Column(db.String, nullable=False, default='available')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'seats': self.seats,
+            'category': self.category,
+            'status': self.status
+        }
+
+class TableOrder(db.Model):
+    __tablename__ = 'table_orders'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    table_id = db.Column(db.String, db.ForeignKey('tables.id'), nullable=False)
+    table_name = db.Column(db.String, nullable=False)
+    items = db.Column(db.Text, nullable=True)  # JSON string
+    start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'tableId': self.table_id,
+            'tableName': self.table_name,
+            'items': json.loads(self.items) if self.items else [],
+            'startTime': self.start_time.isoformat()
+        }
+
+class Invoice(db.Model):
+    __tablename__ = 'invoices'
+    
+    id = db.Column(db.String, primary_key=True)
+    bill_number = db.Column(db.String, nullable=False)
+    order_type = db.Column(db.String, nullable=False)  # 'dine-in' or 'takeaway'
+    table_name = db.Column(db.String, nullable=True)
+    items = db.Column(db.Text, nullable=False)  # JSON string
+    subtotal = db.Column(db.Float, nullable=False)
+    tax = db.Column(db.Float, nullable=False)
+    total = db.Column(db.Float, nullable=False)
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'billNumber': self.bill_number,
+            'orderType': self.order_type,
+            'tableName': self.table_name,
+            'items': json.loads(self.items),
+            'subtotal': self.subtotal,
+            'tax': self.tax,
+            'total': self.total,
+            'timestamp': self.timestamp.isoformat()
+        }
+
+class KOTConfig(db.Model):
+    __tablename__ = 'kot_config'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    print_by_department = db.Column(db.Boolean, nullable=False, default=False)
+    number_of_copies = db.Column(db.Integer, nullable=False, default=1)
+    
+    def to_dict(self):
+        return {
+            'printByDepartment': self.print_by_department,
+            'numberOfCopies': self.number_of_copies
+        }
+
+class BillConfig(db.Model):
+    __tablename__ = 'bill_config'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    auto_print_dine_in = db.Column(db.Boolean, nullable=False, default=False)
+    auto_print_takeaway = db.Column(db.Boolean, nullable=False, default=False)
+    
+    def to_dict(self):
+        return {
+            'autoPrintDineIn': self.auto_print_dine_in,
+            'autoPrintTakeaway': self.auto_print_takeaway
+        }

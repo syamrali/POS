@@ -1,0 +1,18 @@
+# --- Dockerfile.frontend ---
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+# Build the Vite app
+RUN npm run build
+
+# Expose the Vite preview port
+EXPOSE 5173
+
+# Start the production preview server
+CMD ["npm", "run", "preview"]
