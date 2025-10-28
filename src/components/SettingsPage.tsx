@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
@@ -10,15 +10,54 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "./ui/badge";
 import { Store, User, Bell, CreditCard, FileText, Receipt } from "lucide-react";
 import { useRestaurant } from "../contexts/RestaurantContext";
+import * as api from "../services/api";
 
 export function SettingsPage() {
   const { kotConfig, updateKotConfig, billConfig, updateBillConfig } = useRestaurant();
-  const [restaurantName, setRestaurantName] = useState("My Restaurant");
-  const [email, setEmail] = useState("admin@restaurant.com");
-  const [notifications, setNotifications] = useState(true);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [restaurantName, setRestaurantName] = useState("");
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [currency, setCurrency] = useState("INR");
   const [taxRate, setTaxRate] = useState("5");
+  const [notifications, setNotifications] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Load restaurant settings from API on component mount
+  useEffect(() => {
+    loadRestaurantSettings();
+  }, []);
+
+  const loadRestaurantSettings = async () => {
+    try {
+      const settings = await api.getRestaurantSettings();
+      setRestaurantName(settings.restaurantName);
+      setAddress(settings.address || "");
+      setPhone(settings.phone || "");
+      setEmail(settings.email || "");
+      setCurrency(settings.currency);
+      setTaxRate(settings.taxRate.toString());
+    } catch (error) {
+      console.error("Error loading restaurant settings:", error);
+    }
+  };
+
+  const handleSaveRestaurantSettings = async () => {
+    try {
+      await api.updateRestaurantSettings({
+        restaurantName,
+        address,
+        phone,
+        email,
+        currency,
+        taxRate: parseFloat(taxRate),
+      });
+      alert("Restaurant settings saved successfully!");
+    } catch (error) {
+      console.error("Error saving restaurant settings:", error);
+      alert("Failed to save restaurant settings. Please try again.");
+    }
+  };
 
   const handleSave = () => {
     alert("Settings saved successfully!");
@@ -206,6 +245,8 @@ export function SettingsPage() {
                 <Label htmlFor="address">Address</Label>
                 <Input
                   id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
                   placeholder="123 Main St, City, State 12345"
                 />
               </div>
@@ -216,6 +257,8 @@ export function SettingsPage() {
                   <Input
                     id="phone"
                     type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     placeholder="+1 (555) 123-4567"
                   />
                 </div>
@@ -252,7 +295,7 @@ export function SettingsPage() {
               <Separator />
 
               <Button 
-                onClick={handleSave}
+                onClick={handleSaveRestaurantSettings}
                 className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
               >
                 Save Changes

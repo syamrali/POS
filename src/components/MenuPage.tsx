@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -8,8 +8,9 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Plus, Edit, Trash2, FolderPlus, Tag } from "lucide-react";
+import { Plus, Edit, Trash2, FolderPlus, Tag, Download, Upload, FileSpreadsheet } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
+import * as api from "../services/api";
 
 interface MenuItem {
   id: string;
@@ -58,9 +59,9 @@ const initialCategories: Category[] = [
 ];
 
 export function MenuPage() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenuItems);
-  const [departments, setDepartments] = useState<Department[]>(initialDepartments);
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -73,13 +74,48 @@ export function MenuPage() {
   const [newDeptName, setNewDeptName] = useState("");
   const [newCatName, setNewCatName] = useState("");
   
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [formData, setFormData] = useState({
     name: "",
     price: "",
-    category: categories[0]?.name || "",
-    department: departments[0]?.name || "",
+    category: "",
+    department: "",
     description: "",
   });
+
+  // Load data from API on component mount
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [itemsData, categoriesData, departmentsData] = await Promise.all([
+        api.getMenuItems(),
+        api.getCategories(),
+        api.getDepartments(),
+      ]);
+      
+      setMenuItems(itemsData);
+      setCategories(categoriesData);
+      setDepartments(departmentsData);
+      
+      // Set default form values if categories/departments exist
+      if (categoriesData.length > 0 && departmentsData.length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          category: categoriesData[0].name,
+          department: departmentsData[0].name,
+        }));
+      }
+    } catch (error) {
+      console.error("Error loading menu data:", error);
+      alert("Failed to load menu data. Please refresh the page.");
+    }
+  };
 
   const filteredItems = selectedCategory === "All" 
     ? menuItems 
@@ -114,15 +150,21 @@ export function MenuPage() {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (itemToDelete) {
-      setMenuItems(prev => prev.filter(i => i.id !== itemToDelete.id));
-      setDeleteDialogOpen(false);
-      setItemToDelete(null);
+      try {
+        await api.deleteMenuItem(itemToDelete.id);
+        setMenuItems(prev => prev.filter(i => i.id !== itemToDelete.id));
+        setDeleteDialogOpen(false);
+        setItemToDelete(null);
+      } catch (error) {
+        console.error("Error deleting menu item:", error);
+        alert("Failed to delete menu item. Please try again.");
+      }
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name || !formData.price) {
       alert("Please fill in all required fields");
       return;
@@ -134,63 +176,165 @@ export function MenuPage() {
       return;
     }
 
-    if (editingItem) {
-      setMenuItems(prev =>
-        prev.map(item =>
-          item.id === editingItem.id
-            ? { 
-                ...item, 
-                name: formData.name, 
-                price, 
-                category: formData.category, 
-                department: formData.department,
-                description: formData.description 
-              }
-            : item
-        )
-      );
-    } else {
-      const newItem: MenuItem = {
-        id: Date.now().toString(),
-        name: formData.name,
-        price,
-        category: formData.category,
-        department: formData.department,
-        description: formData.description,
-      };
-      setMenuItems(prev => [...prev, newItem]);
-    }
+    try {
+      if (editingItem) {
+        const updatedItem = await api.updateMenuItem(editingItem.id, {
+          name: formData.name, 
+          price, 
+          category: formData.category, 
+          department: formData.department,
+          description: formData.description 
+        });
+        setMenuItems(prev =>
+          prev.map(item =>
+            item.id === editingItem.id ? updatedItem : item
+          )
+        );
+      } else {
+        const newItem = await api.createMenuItem({
+          name: formData.name,
+          price,
+          category: formData.category,
+          department: formData.department,
+          description: formData.description,
+        });
+        setMenuItems(prev => [...prev, newItem]);
+      }
 
-    setDialogOpen(false);
-    setFormData({ name: "", price: "", category: categories[0]?.name || "", department: departments[0]?.name || "", description: "" });
+      setDialogOpen(false);
+      setFormData({ name: "", price: "", category: categories[0]?.name || "", department: departments[0]?.name || "", description: "" });
+    } catch (error) {
+      console.error("Error saving menu item:", error);
+      alert("Failed to save menu item. Please try again.");
+    }
   };
 
-  const handleAddDepartment = () => {
+  const handleAddDepartment = async () => {
     if (!newDeptName.trim()) {
       alert("Please enter a department name");
       return;
     }
-    const newDept: Department = {
-      id: Date.now().toString(),
-      name: newDeptName.trim(),
-    };
-    setDepartments(prev => [...prev, newDept]);
-    setNewDeptName("");
-    setDeptDialogOpen(false);
+    try {
+      const newDept = await api.createDepartment({ name: newDeptName.trim() });
+      setDepartments(prev => [...prev, newDept]);
+      setNewDeptName("");
+      setDeptDialogOpen(false);
+    } catch (error) {
+      console.error("Error creating department:", error);
+      alert("Failed to create department. Please try again.");
+    }
   };
 
-  const handleAddCategory = () => {
+  const handleDeleteDepartment = async (dept: Department) => {
+    if (confirm(`Delete department "${dept.name}"?`)) {
+      try {
+        await api.deleteDepartment(dept.id);
+        setDepartments(prev => prev.filter(d => d.id !== dept.id));
+      } catch (error) {
+        console.error("Error deleting department:", error);
+        alert("Failed to delete department. Please try again.");
+      }
+    }
+  };
+
+  const handleAddCategory = async () => {
     if (!newCatName.trim()) {
       alert("Please enter a category name");
       return;
     }
-    const newCat: Category = {
-      id: Date.now().toString(),
-      name: newCatName.trim(),
-    };
-    setCategories(prev => [...prev, newCat]);
-    setNewCatName("");
-    setCatDialogOpen(false);
+    try {
+      const newCat = await api.createCategory({ name: newCatName.trim() });
+      setCategories(prev => [...prev, newCat]);
+      setNewCatName("");
+      setCatDialogOpen(false);
+    } catch (error) {
+      console.error("Error creating category:", error);
+      alert("Failed to create category. Please try again.");
+    }
+  };
+
+  const handleDeleteCategory = async (cat: Category) => {
+    if (confirm(`Delete category "${cat.name}"?`)) {
+      try {
+        await api.deleteCategory(cat.id);
+        setCategories(prev => prev.filter(c => c.id !== cat.id));
+      } catch (error) {
+        console.error("Error deleting category:", error);
+        alert("Failed to delete category. Please try again.");
+      }
+    }
+  };
+
+  // Excel Import/Export handlers
+  const handleDownloadTemplate = async () => {
+    try {
+      const blob = await api.downloadMenuTemplate();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'menu_import_template.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error downloading template:", error);
+      alert("Failed to download template. Please try again.");
+    }
+  };
+
+  const handleExportData = async () => {
+    try {
+      const blob = await api.exportMenuData();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'menu_data_export.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      alert("Failed to export data. Please try again.");
+    }
+  };
+
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const result = await api.importMenuData(file);
+      
+      if (result.success) {
+        // Reload data after successful import
+        await loadData();
+        
+        let message = `Import completed successfully!\n\n`;
+        message += `✅ Categories added: ${result.stats.categories_added}\n`;
+        message += `✅ Departments added: ${result.stats.departments_added}\n`;
+        message += `✅ Menu items added: ${result.stats.items_added}`;
+        
+        if (result.stats.errors && result.stats.errors.length > 0) {
+          message += '\n\nWarning - Errors occurred:\n' + result.stats.errors.join('\n');
+        }
+        
+        alert(message);
+        setImportDialogOpen(false);
+      } else {
+        alert("Import failed. Please check the file format and try again.");
+      }
+    } catch (error) {
+      console.error("Error importing file:", error);
+      alert("Failed to import file. Please check the file format and try again.");
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const categoryStats = categories.map(cat => ({
@@ -230,6 +374,22 @@ export function MenuPage() {
               >
                 <Tag className="size-4 mr-2" />
                 Add Category
+              </Button>
+              <Button
+                onClick={() => setImportDialogOpen(true)}
+                variant="outline"
+                className="border-green-600 text-green-600 hover:bg-green-50"
+              >
+                <FileSpreadsheet className="size-4 mr-2" />
+                Bulk Import
+              </Button>
+              <Button
+                onClick={handleExportData}
+                variant="outline"
+                className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              >
+                <Download className="size-4 mr-2" />
+                Export Data
               </Button>
             </div>
             <Button
@@ -358,11 +518,7 @@ export function MenuPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        if (confirm(`Delete department "${dept.name}"?`)) {
-                          setDepartments(prev => prev.filter(d => d.id !== dept.id));
-                        }
-                      }}
+                      onClick={() => handleDeleteDepartment(dept)}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="size-4" />
@@ -408,11 +564,7 @@ export function MenuPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        if (confirm(`Delete category "${cat.name}"?`)) {
-                          setCategories(prev => prev.filter(c => c.id !== cat.id));
-                        }
-                      }}
+                      onClick={() => handleDeleteCategory(cat)}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="size-4" />
@@ -598,6 +750,75 @@ export function MenuPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Bulk Import Menu Data</DialogTitle>
+            <DialogDescription>
+              Import menu items, categories, and departments from an Excel file
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-blue-900 font-medium mb-2">📋 How to use:</p>
+              <ol className="text-blue-700 space-y-1 text-sm list-decimal list-inside">
+                <li>Download the Excel template</li>
+                <li>Fill in your data in the template</li>
+                <li>Upload the completed file</li>
+              </ol>
+            </div>
+
+            <Button
+              onClick={handleDownloadTemplate}
+              variant="outline"
+              className="w-full border-purple-600 text-purple-600 hover:bg-purple-50"
+            >
+              <Download className="size-4 mr-2" />
+              Download Excel Template
+            </Button>
+
+            <div className="relative">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleImportFile}
+                className="hidden"
+                id="file-upload"
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importing}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+              >
+                {importing ? (
+                  <>Processing...</>
+                ) : (
+                  <>
+                    <Upload className="size-4 mr-2" />
+                    Upload Filled Excel File
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+              <p className="text-yellow-900 text-sm">
+                ⚠️ Note: Categories and Departments must be created before menu items that reference them.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

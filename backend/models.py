@@ -92,3 +92,69 @@ class BillConfig(db.Model):
             'autoPrintDineIn': self.auto_print_dine_in,
             'autoPrintTakeaway': self.auto_print_takeaway
         }
+
+class MenuItem(db.Model):
+    __tablename__ = 'menu_items'
+    
+    id = db.Column(db.String, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    category = db.Column(db.String, nullable=False)
+    department = db.Column(db.String, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'price': self.price,
+            'category': self.category,
+            'department': self.department,
+            'description': self.description
+        }
+
+class Category(db.Model):
+    __tablename__ = 'categories'
+    
+    id = db.Column(db.String, primary_key=True)
+    name = db.Column(db.String, nullable=False, unique=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
+
+class Department(db.Model):
+    __tablename__ = 'departments'
+    
+    id = db.Column(db.String, primary_key=True)
+    name = db.Column(db.String, nullable=False, unique=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
+
+class RestaurantSettings(db.Model):
+    __tablename__ = 'restaurant_settings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    restaurant_name = db.Column(db.String, nullable=False)
+    address = db.Column(db.String, nullable=True)
+    phone = db.Column(db.String, nullable=True)
+    email = db.Column(db.String, nullable=True)
+    currency = db.Column(db.String, nullable=False, default='INR')
+    tax_rate = db.Column(db.Float, nullable=False, default=5.0)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'restaurantName': self.restaurant_name,
+            'address': self.address,
+            'phone': self.phone,
+            'email': self.email,
+            'currency': self.currency,
+            'taxRate': self.tax_rate
+        }

@@ -196,3 +196,151 @@ export const login = async (email: string, password: string): Promise<boolean> =
   
   return response.ok;
 };
+
+// Menu Item API
+export interface MenuItem {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  department: string;
+  description: string;
+}
+
+export const getMenuItems = async (): Promise<MenuItem[]> => {
+  const response = await fetch(`${API_BASE_URL}/menu-items`);
+  return response.json();
+};
+
+export const createMenuItem = async (item: Omit<MenuItem, 'id'>): Promise<MenuItem> => {
+  const response = await fetch(`${API_BASE_URL}/menu-items`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(item),
+  });
+  return response.json();
+};
+
+export const updateMenuItem = async (itemId: string, item: Partial<MenuItem>): Promise<MenuItem> => {
+  const response = await fetch(`${API_BASE_URL}/menu-items/${itemId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(item),
+  });
+  return response.json();
+};
+
+export const deleteMenuItem = async (itemId: string): Promise<void> => {
+  await fetch(`${API_BASE_URL}/menu-items/${itemId}`, {
+    method: 'DELETE',
+  });
+};
+
+// Category API
+export interface Category {
+  id: string;
+  name: string;
+}
+
+export const getCategories = async (): Promise<Category[]> => {
+  const response = await fetch(`${API_BASE_URL}/categories`);
+  return response.json();
+};
+
+export const createCategory = async (category: Omit<Category, 'id'>): Promise<Category> => {
+  const response = await fetch(`${API_BASE_URL}/categories`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(category),
+  });
+  return response.json();
+};
+
+export const deleteCategory = async (categoryId: string): Promise<void> => {
+  await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
+    method: 'DELETE',
+  });
+};
+
+// Department API
+export interface Department {
+  id: string;
+  name: string;
+}
+
+export const getDepartments = async (): Promise<Department[]> => {
+  const response = await fetch(`${API_BASE_URL}/departments`);
+  return response.json();
+};
+
+export const createDepartment = async (department: Omit<Department, 'id'>): Promise<Department> => {
+  const response = await fetch(`${API_BASE_URL}/departments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(department),
+  });
+  return response.json();
+};
+
+export const deleteDepartment = async (departmentId: string): Promise<void> => {
+  await fetch(`${API_BASE_URL}/departments/${departmentId}`, {
+    method: 'DELETE',
+  });
+};
+
+// Restaurant Settings API
+export interface RestaurantSettings {
+  id: number;
+  restaurantName: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  currency: string;
+  taxRate: number;
+}
+
+export const getRestaurantSettings = async (): Promise<RestaurantSettings> => {
+  const response = await fetch(`${API_BASE_URL}/restaurant-settings`);
+  return response.json();
+};
+
+export const updateRestaurantSettings = async (settings: Partial<RestaurantSettings>): Promise<RestaurantSettings> => {
+  const response = await fetch(`${API_BASE_URL}/restaurant-settings`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(settings),
+  });
+  return response.json();
+};
+
+// Excel Import/Export API
+export const downloadMenuTemplate = async (): Promise<Blob> => {
+  const response = await fetch(`${API_BASE_URL}/menu/export-template`);
+  return response.blob();
+};
+
+export const exportMenuData = async (): Promise<Blob> => {
+  const response = await fetch(`${API_BASE_URL}/menu/export`);
+  return response.blob();
+};
+
+export const importMenuData = async (file: File): Promise<{ success: boolean; message: string; stats: any }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await fetch(`${API_BASE_URL}/menu/import`, {
+    method: 'POST',
+    body: formData,
+  });
+  return response.json();
+};
