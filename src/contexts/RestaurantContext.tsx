@@ -41,11 +41,13 @@ export interface Invoice {
 export interface KOTConfig {
   printByDepartment: boolean;
   numberOfCopies: number;
+  selectedPrinter?: string | null;
 }
 
 export interface BillConfig {
   autoPrintDineIn: boolean;
   autoPrintTakeaway: boolean;
+  selectedPrinter?: string | null;
 }
 
 interface RestaurantContextType {
@@ -73,10 +75,12 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const [kotConfig, setKotConfig] = useState<KOTConfig>({
     printByDepartment: false,
     numberOfCopies: 1,
+    selectedPrinter: null,
   });
   const [billConfig, setBillConfig] = useState<BillConfig>({
     autoPrintDineIn: false,
     autoPrintTakeaway: false,
+    selectedPrinter: null,
   });
 
   // Load data from API on component mount

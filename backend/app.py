@@ -322,6 +322,7 @@ def update_kot_config():
         data = request.get_json()
         config.print_by_department = data.get('printByDepartment', config.print_by_department)
         config.number_of_copies = data.get('numberOfCopies', config.number_of_copies)
+        config.selected_printer = data.get('selectedPrinter', config.selected_printer)
         
         db.session.commit()
         
@@ -361,6 +362,7 @@ def update_bill_config():
         data = request.get_json()
         config.auto_print_dine_in = data.get('autoPrintDineIn', config.auto_print_dine_in)
         config.auto_print_takeaway = data.get('autoPrintTakeaway', config.auto_print_takeaway)
+        config.selected_printer = data.get('selectedPrinter', config.selected_printer)
         
         db.session.commit()
         

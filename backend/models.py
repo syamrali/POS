@@ -73,11 +73,13 @@ class KOTConfig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     print_by_department = db.Column(db.Boolean, nullable=False, default=False)
     number_of_copies = db.Column(db.Integer, nullable=False, default=1)
+    selected_printer = db.Column(db.String, nullable=True)  # Selected printer for KOT
     
     def to_dict(self):
         return {
             'printByDepartment': self.print_by_department,
-            'numberOfCopies': self.number_of_copies
+            'numberOfCopies': self.number_of_copies,
+            'selectedPrinter': self.selected_printer
         }
 
 class BillConfig(db.Model):
@@ -86,11 +88,13 @@ class BillConfig(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     auto_print_dine_in = db.Column(db.Boolean, nullable=False, default=False)
     auto_print_takeaway = db.Column(db.Boolean, nullable=False, default=False)
+    selected_printer = db.Column(db.String, nullable=True)  # Selected printer for Bills
     
     def to_dict(self):
         return {
             'autoPrintDineIn': self.auto_print_dine_in,
-            'autoPrintTakeaway': self.auto_print_takeaway
+            'autoPrintTakeaway': self.auto_print_takeaway,
+            'selectedPrinter': self.selected_printer
         }
 
 class MenuItem(db.Model):

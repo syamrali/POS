@@ -22,6 +22,15 @@ export function SettingsPage() {
   const [taxRate, setTaxRate] = useState("5");
   const [notifications, setNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  
+  // Available printers list
+  const availablePrinters = [
+    "Default Printer",
+    "Thermal Printer 1",
+    "Thermal Printer 2",
+    "Network Printer",
+    "USB Printer"
+  ];
 
   // Load restaurant settings from API on component mount
   useEffect(() => {
@@ -146,11 +155,37 @@ export function SettingsPage() {
 
               <Separator />
 
+              <div className="space-y-2">
+                <Label htmlFor="kot-printer">Select Printer</Label>
+                <p className="text-muted-foreground mb-2">
+                  Choose the printer for kitchen order tickets
+                </p>
+                <Select 
+                  value={kotConfig.selectedPrinter || "none"} 
+                  onValueChange={(value) => updateKotConfig({ ...kotConfig, selectedPrinter: value === "none" ? null : value })}
+                >
+                  <SelectTrigger id="kot-printer">
+                    <SelectValue placeholder="Select printer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {availablePrinters.map((printer) => (
+                      <SelectItem key={printer} value={printer}>
+                        {printer}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-blue-900 mb-2">Current Settings:</p>
                 <ul className="text-blue-700 space-y-1">
                   <li>• Department-wise printing: {kotConfig.printByDepartment ? 'Enabled' : 'Disabled'}</li>
                   <li>• Copies per KOT: {kotConfig.numberOfCopies}</li>
+                  <li>• Selected Printer: {kotConfig.selectedPrinter || 'None'}</li>
                 </ul>
               </div>
 
@@ -204,11 +239,37 @@ export function SettingsPage() {
 
               <Separator />
 
+              <div className="space-y-2">
+                <Label htmlFor="bill-printer">Select Printer</Label>
+                <p className="text-muted-foreground mb-2">
+                  Choose the printer for customer bills
+                </p>
+                <Select 
+                  value={billConfig.selectedPrinter || "none"} 
+                  onValueChange={(value) => updateBillConfig({ ...billConfig, selectedPrinter: value === "none" ? null : value })}
+                >
+                  <SelectTrigger id="bill-printer">
+                    <SelectValue placeholder="Select printer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {availablePrinters.map((printer) => (
+                      <SelectItem key={printer} value={printer}>
+                        {printer}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
               <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                 <p className="text-green-900 mb-2">Current Settings:</p>
                 <ul className="text-green-700 space-y-1">
                   <li>• Dine-In auto-print: {billConfig.autoPrintDineIn ? 'Enabled' : 'Disabled'}</li>
                   <li>• Takeaway auto-print: {billConfig.autoPrintTakeaway ? 'Enabled' : 'Disabled'}</li>
+                  <li>• Selected Printer: {billConfig.selectedPrinter || 'None'}</li>
                 </ul>
               </div>
 

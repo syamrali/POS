@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+// Use dynamic API URL - works in both Docker and local development
+const API_BASE_URL = `http://${window.location.hostname}:5000/api`;
 
 export interface Table {
   id: string;
@@ -40,11 +41,13 @@ export interface Invoice {
 export interface KOTConfig {
   printByDepartment: boolean;
   numberOfCopies: number;
+  selectedPrinter?: string | null;
 }
 
 export interface BillConfig {
   autoPrintDineIn: boolean;
   autoPrintTakeaway: boolean;
+  selectedPrinter?: string | null;
 }
 
 // Table API
@@ -160,6 +163,7 @@ export const updateKOTConfig = async (config: KOTConfig): Promise<KOTConfig> => 
     body: JSON.stringify({
       printByDepartment: config.printByDepartment,
       numberOfCopies: config.numberOfCopies,
+      selectedPrinter: config.selectedPrinter,
     }),
   });
   return response.json();
@@ -179,6 +183,7 @@ export const updateBillConfig = async (config: BillConfig): Promise<BillConfig> 
     body: JSON.stringify({
       autoPrintDineIn: config.autoPrintDineIn,
       autoPrintTakeaway: config.autoPrintTakeaway,
+      selectedPrinter: config.selectedPrinter,
     }),
   });
   return response.json();
