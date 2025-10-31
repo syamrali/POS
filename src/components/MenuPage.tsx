@@ -7,14 +7,14 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { Plus, Edit, Trash2, FolderPlus, Tag, Download, Upload, FileSpreadsheet } from "lucide-react";
+import { Plus, Edit, Trash2, Download, Upload, FileSpreadsheet } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import * as api from "../services/api";
 
 interface MenuItem {
   id: string;
   name: string;
+  productCode: string;
   price: number;
   category: string;
   department: string;
@@ -31,33 +31,6 @@ interface Category {
   name: string;
 }
 
-const initialMenuItems: MenuItem[] = [
-  { id: "1", name: "Classic Burger", price: 259, category: "Mains", department: "Kitchen", description: "Beef patty with lettuce, tomato, cheese" },
-  { id: "2", name: "Caesar Salad", price: 199, category: "Salads", department: "Kitchen", description: "Romaine lettuce, croutons, parmesan" },
-  { id: "3", name: "Margherita Pizza", price: 299, category: "Mains", department: "Kitchen", description: "Fresh mozzarella, basil, tomato sauce" },
-  { id: "4", name: "Fish & Chips", price: 319, category: "Mains", department: "Kitchen", description: "Beer-battered fish with crispy fries" },
-  { id: "5", name: "Greek Salad", price: 219, category: "Salads", department: "Kitchen", description: "Feta, olives, cucumber, tomatoes" },
-  { id: "6", name: "Pasta Carbonara", price: 279, category: "Mains", department: "Kitchen", description: "Creamy sauce with bacon and parmesan" },
-  { id: "7", name: "Coca Cola", price: 59, category: "Beverages", department: "Bar", description: "330ml can" },
-  { id: "8", name: "Fresh Orange Juice", price: 99, category: "Beverages", department: "Bar", description: "Freshly squeezed" },
-  { id: "9", name: "Chocolate Cake", price: 139, category: "Desserts", department: "Kitchen", description: "Rich chocolate layer cake" },
-  { id: "10", name: "Ice Cream Sundae", price: 119, category: "Desserts", department: "Kitchen", description: "Vanilla ice cream with toppings" },
-];
-
-const initialDepartments: Department[] = [
-  { id: "1", name: "Kitchen" },
-  { id: "2", name: "Bar" },
-  { id: "3", name: "Grill" },
-];
-
-const initialCategories: Category[] = [
-  { id: "1", name: "Mains" },
-  { id: "2", name: "Salads" },
-  { id: "3", name: "Beverages" },
-  { id: "4", name: "Desserts" },
-  { id: "5", name: "Appetizers" },
-];
-
 export function MenuPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -69,24 +42,19 @@ export function MenuPage() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
   
-  const [deptDialogOpen, setDeptDialogOpen] = useState(false);
-  const [catDialogOpen, setCatDialogOpen] = useState(false);
-  const [newDeptName, setNewDeptName] = useState("");
-  const [newCatName, setNewCatName] = useState("");
-  
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
     name: "",
+    productCode: "",
     price: "",
     category: "",
     department: "",
     description: "",
   });
 
-  // Load data from API on component mount
   useEffect(() => {
     loadData();
   }, []);
@@ -103,7 +71,6 @@ export function MenuPage() {
       setCategories(categoriesData);
       setDepartments(departmentsData);
       
-      // Set default form values if categories/departments exist
       if (categoriesData.length > 0 && departmentsData.length > 0) {
         setFormData(prev => ({
           ...prev,
@@ -125,6 +92,7 @@ export function MenuPage() {
     setEditingItem(null);
     setFormData({ 
       name: "", 
+      productCode: "",
       price: "", 
       category: categories[0]?.name || "", 
       department: departments[0]?.name || "",
@@ -137,6 +105,7 @@ export function MenuPage() {
     setEditingItem(item);
     setFormData({
       name: item.name,
+      productCode: item.productCode,
       price: item.price.toString(),
       category: item.category,
       department: item.department,
@@ -165,7 +134,7 @@ export function MenuPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.price) {
+    if (!formData.name || !formData.productCode || !formData.price) {
       alert("Please fill in all required fields");
       return;
     }
@@ -180,6 +149,7 @@ export function MenuPage() {
       if (editingItem) {
         const updatedItem = await api.updateMenuItem(editingItem.id, {
           name: formData.name, 
+          productCode: formData.productCode,
           price, 
           category: formData.category, 
           department: formData.department,
@@ -193,6 +163,7 @@ export function MenuPage() {
       } else {
         const newItem = await api.createMenuItem({
           name: formData.name,
+          productCode: formData.productCode,
           price,
           category: formData.category,
           department: formData.department,
@@ -202,70 +173,18 @@ export function MenuPage() {
       }
 
       setDialogOpen(false);
-      setFormData({ name: "", price: "", category: categories[0]?.name || "", department: departments[0]?.name || "", description: "" });
-    } catch (error) {
+      setFormData({ name: "", productCode: "", price: "", category: categories[0]?.name || "", department: departments[0]?.name || "", description: "" });
+    } catch (error: any) {
       console.error("Error saving menu item:", error);
-      alert("Failed to save menu item. Please try again.");
-    }
-  };
-
-  const handleAddDepartment = async () => {
-    if (!newDeptName.trim()) {
-      alert("Please enter a department name");
-      return;
-    }
-    try {
-      const newDept = await api.createDepartment({ name: newDeptName.trim() });
-      setDepartments(prev => [...prev, newDept]);
-      setNewDeptName("");
-      setDeptDialogOpen(false);
-    } catch (error) {
-      console.error("Error creating department:", error);
-      alert("Failed to create department. Please try again.");
-    }
-  };
-
-  const handleDeleteDepartment = async (dept: Department) => {
-    if (confirm(`Delete department "${dept.name}"?`)) {
-      try {
-        await api.deleteDepartment(dept.id);
-        setDepartments(prev => prev.filter(d => d.id !== dept.id));
-      } catch (error) {
-        console.error("Error deleting department:", error);
-        alert("Failed to delete department. Please try again.");
+      const errorMsg = error?.response?.data?.error || error?.message || "";
+      if (errorMsg.includes('Product code already exists') || errorMsg.includes('already exists')) {
+        alert("Product code already exists. Please use a unique product code.");
+      } else {
+        alert("Failed to save menu item. Please try again.");
       }
     }
   };
 
-  const handleAddCategory = async () => {
-    if (!newCatName.trim()) {
-      alert("Please enter a category name");
-      return;
-    }
-    try {
-      const newCat = await api.createCategory({ name: newCatName.trim() });
-      setCategories(prev => [...prev, newCat]);
-      setNewCatName("");
-      setCatDialogOpen(false);
-    } catch (error) {
-      console.error("Error creating category:", error);
-      alert("Failed to create category. Please try again.");
-    }
-  };
-
-  const handleDeleteCategory = async (cat: Category) => {
-    if (confirm(`Delete category "${cat.name}"?`)) {
-      try {
-        await api.deleteCategory(cat.id);
-        setCategories(prev => prev.filter(c => c.id !== cat.id));
-      } catch (error) {
-        console.error("Error deleting category:", error);
-        alert("Failed to delete category. Please try again.");
-      }
-    }
-  };
-
-  // Excel Import/Export handlers
   const handleDownloadTemplate = async () => {
     try {
       const blob = await api.downloadMenuTemplate();
@@ -309,7 +228,6 @@ export function MenuPage() {
       const result = await api.importMenuData(file);
       
       if (result.success) {
-        // Reload data after successful import
         await loadData();
         
         let message = `Import completed successfully!\n\n`;
@@ -344,242 +262,130 @@ export function MenuPage() {
 
   return (
     <div className="p-6">
-      <Tabs defaultValue="items" className="space-y-6">
+      <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-gray-900 mb-2">Menu Management</h2>
-            <p className="text-muted-foreground">Manage menu items, departments, and categories</p>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Menu Items</h2>
+            <p className="text-muted-foreground">Manage your restaurant menu items</p>
           </div>
-          <TabsList>
-            <TabsTrigger value="items">Menu Items</TabsTrigger>
-            <TabsTrigger value="departments">Departments</TabsTrigger>
-            <TabsTrigger value="categories">Categories</TabsTrigger>
-          </TabsList>
         </div>
 
-        {/* Menu Items Tab */}
-        <TabsContent value="items" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setDeptDialogOpen(true)}
-                variant="outline"
-              >
-                <FolderPlus className="size-4 mr-2" />
-                Add Department
-              </Button>
-              <Button
-                onClick={() => setCatDialogOpen(true)}
-                variant="outline"
-              >
-                <Tag className="size-4 mr-2" />
-                Add Category
-              </Button>
-              <Button
-                onClick={() => setImportDialogOpen(true)}
-                variant="outline"
-                className="border-green-600 text-green-600 hover:bg-green-50"
-              >
-                <FileSpreadsheet className="size-4 mr-2" />
-                Bulk Import
-              </Button>
-              <Button
-                onClick={handleExportData}
-                variant="outline"
-                className="border-blue-600 text-blue-600 hover:bg-blue-50"
-              >
-                <Download className="size-4 mr-2" />
-                Export Data
-              </Button>
-            </div>
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
             <Button
-              onClick={handleAdd}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              onClick={() => setImportDialogOpen(true)}
+              variant="outline"
+              className="border-green-600 text-green-600 hover:bg-green-50"
             >
-              <Plus className="size-4 mr-2" />
-              Add Item
+              <FileSpreadsheet className="size-4 mr-2" />
+              Bulk Import
+            </Button>
+            <Button
+              onClick={handleExportData}
+              variant="outline"
+              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+            >
+              <Download className="size-4 mr-2" />
+              Export Data
             </Button>
           </div>
+          <Button
+            onClick={handleAdd}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+          >
+            <Plus className="size-4 mr-2" />
+            Add Item
+          </Button>
+        </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {categoryStats.map(stat => (
-              <Card key={stat.name} className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-100">
-                <CardContent className="p-4">
-                  <p className="text-muted-foreground mb-1">{stat.name}</p>
-                  <p className="text-purple-600">{stat.count} items</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          {categoryStats.map(stat => (
+            <Card key={stat.name} className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-100">
+              <CardContent className="p-4">
+                <p className="text-sm text-muted-foreground mb-1">{stat.name}</p>
+                <p className="text-2xl font-bold text-purple-600">{stat.count}</p>
+                <p className="text-xs text-muted-foreground">items</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-          {/* Category Filter */}
-          <div className="flex gap-2 flex-wrap">
+        {/* Category Filter */}
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant={selectedCategory === "All" ? "default" : "outline"}
+            onClick={() => setSelectedCategory("All")}
+            className={selectedCategory === "All" 
+              ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+              : ""
+            }
+          >
+            All
+          </Button>
+          {categories.map(category => (
             <Button
-              variant={selectedCategory === "All" ? "default" : "outline"}
-              onClick={() => setSelectedCategory("All")}
-              className={selectedCategory === "All" 
+              key={category.id}
+              variant={selectedCategory === category.name ? "default" : "outline"}
+              onClick={() => setSelectedCategory(category.name)}
+              className={selectedCategory === category.name 
                 ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                 : ""
               }
             >
-              All
+              {category.name}
             </Button>
-            {categories.map(category => (
-              <Button
-                key={category.id}
-                variant={selectedCategory === category.name ? "default" : "outline"}
-                onClick={() => setSelectedCategory(category.name)}
-                className={selectedCategory === category.name 
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                  : ""
-                }
-              >
-                {category.name}
-              </Button>
-            ))}
-          </div>
+          ))}
+        </div>
 
-          {/* Menu Items Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredItems.map(item => (
-              <Card key={item.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-gray-900">{item.name}</CardTitle>
-                      <div className="flex gap-1 mt-1">
-                        <Badge variant="secondary">{item.category}</Badge>
-                        <Badge variant="outline">{item.department}</Badge>
-                      </div>
+        {/* Menu Items Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredItems.map(item => (
+            <Card key={item.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg text-gray-900">{item.name}</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">Code: {item.productCode}</p>
+                    <div className="flex gap-1 mt-2">
+                      <Badge variant="secondary" className="text-xs">{item.category}</Badge>
+                      <Badge variant="outline" className="text-xs">{item.department}</Badge>
                     </div>
-                    <p className="text-purple-600">₹{item.price}</p>
                   </div>
-                  <CardDescription>{item.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(item)}
-                      className="flex-1"
-                    >
-                      <Edit className="size-3 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(item)}
-                      className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="size-3 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Departments Tab */}
-        <TabsContent value="departments">
-          <div className="max-w-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-gray-900 mb-1">Departments</h3>
-                <p className="text-muted-foreground">Manage kitchen departments</p>
-              </div>
-              <Button
-                onClick={() => setDeptDialogOpen(true)}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-              >
-                <Plus className="size-4 mr-2" />
-                Add Department
-              </Button>
-            </div>
-            <div className="grid gap-3">
-              {departments.map(dept => (
-                <Card key={dept.id}>
-                  <CardContent className="p-4 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-full bg-purple-100 flex items-center justify-center">
-                        <FolderPlus className="size-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="text-gray-900">{dept.name}</p>
-                        <p className="text-muted-foreground">
-                          {menuItems.filter(item => item.department === dept.name).length} items
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteDepartment(dept)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Categories Tab */}
-        <TabsContent value="categories">
-          <div className="max-w-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-gray-900 mb-1">Categories</h3>
-                <p className="text-muted-foreground">Manage menu categories</p>
-              </div>
-              <Button
-                onClick={() => setCatDialogOpen(true)}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-              >
-                <Plus className="size-4 mr-2" />
-                Add Category
-              </Button>
-            </div>
-            <div className="grid gap-3">
-              {categories.map(cat => (
-                <Card key={cat.id}>
-                  <CardContent className="p-4 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-full bg-pink-100 flex items-center justify-center">
-                        <Tag className="size-5 text-pink-600" />
-                      </div>
-                      <div>
-                        <p className="text-gray-900">{cat.name}</p>
-                        <p className="text-muted-foreground">
-                          {menuItems.filter(item => item.category === cat.name).length} items
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteCategory(cat)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+                  <p className="text-lg font-bold text-purple-600">₹{item.price}</p>
+                </div>
+                <CardDescription className="mt-2">{item.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(item)}
+                    className="flex-1"
+                  >
+                    <Edit className="size-3 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(item)}
+                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="size-3 mr-1" />
+                    Delete
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
 
       {/* Add/Edit Item Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingItem ? "Edit Menu Item" : "Add New Menu Item"}</DialogTitle>
             <DialogDescription>
@@ -588,6 +394,16 @@ export function MenuPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="productCode">Product Code *</Label>
+              <Input
+                id="productCode"
+                placeholder="e.g., CB001, PIZZA01"
+                value={formData.productCode}
+                onChange={(e) => setFormData({ ...formData, productCode: e.target.value })}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="name">Item Name *</Label>
               <Input
@@ -625,7 +441,7 @@ export function MenuPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">Category *</Label>
               <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
                 <SelectTrigger id="category">
                   <SelectValue />
@@ -664,72 +480,6 @@ export function MenuPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Department Dialog */}
-      <Dialog open={deptDialogOpen} onOpenChange={setDeptDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Department</DialogTitle>
-            <DialogDescription>
-              Enter the name for the new department
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="dept-name">Department Name</Label>
-            <Input
-              id="dept-name"
-              placeholder="e.g., Kitchen, Bar, Grill"
-              value={newDeptName}
-              onChange={(e) => setNewDeptName(e.target.value)}
-              className="mt-2"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeptDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddDepartment}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-            >
-              Add Department
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Category Dialog */}
-      <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Category</DialogTitle>
-            <DialogDescription>
-              Enter the name for the new category
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="cat-name">Category Name</Label>
-            <Input
-              id="cat-name"
-              placeholder="e.g., Appetizers, Mains, Desserts"
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              className="mt-2"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCatDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddCategory}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-            >
-              Add Category
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
@@ -763,8 +513,8 @@ export function MenuPage() {
 
           <div className="space-y-4 py-4">
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-blue-900 font-medium mb-2">📋 How to use:</p>
-              <ol className="text-blue-700 space-y-1 text-sm list-decimal list-inside">
+              <p className="text-sm font-medium text-blue-900 mb-2">📋 How to use:</p>
+              <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
                 <li>Download the Excel template</li>
                 <li>Fill in your data in the template</li>
                 <li>Upload the completed file</li>
@@ -806,7 +556,7 @@ export function MenuPage() {
             </div>
 
             <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-              <p className="text-yellow-900 text-sm">
+              <p className="text-sm text-yellow-900">
                 ⚠️ Note: Categories and Departments must be created before menu items that reference them.
               </p>
             </div>

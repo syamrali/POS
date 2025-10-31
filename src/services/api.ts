@@ -201,6 +201,7 @@ export const login = async (email: string, password: string): Promise<boolean> =
 export interface MenuItem {
   id: string;
   name: string;
+  productCode: string;
   price: number;
   category: string;
   department: string;

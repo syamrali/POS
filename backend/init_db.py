@@ -67,16 +67,16 @@ def init_database():
         # Check if we have menu items
         if MenuItem.query.first() is None:
             menu_items = [
-                MenuItem(id="1", name="Classic Burger", price=259, category="Mains", department="Kitchen", description="Beef patty with lettuce, tomato, cheese"),
-                MenuItem(id="2", name="Caesar Salad", price=199, category="Salads", department="Kitchen", description="Romaine lettuce, croutons, parmesan"),
-                MenuItem(id="3", name="Margherita Pizza", price=299, category="Mains", department="Kitchen", description="Fresh mozzarella, basil, tomato sauce"),
-                MenuItem(id="4", name="Fish & Chips", price=319, category="Mains", department="Kitchen", description="Beer-battered fish with crispy fries"),
-                MenuItem(id="5", name="Greek Salad", price=219, category="Salads", department="Kitchen", description="Feta, olives, cucumber, tomatoes"),
-                MenuItem(id="6", name="Pasta Carbonara", price=279, category="Mains", department="Kitchen", description="Creamy sauce with bacon and parmesan"),
-                MenuItem(id="7", name="Coca Cola", price=59, category="Beverages", department="Bar", description="330ml can"),
-                MenuItem(id="8", name="Fresh Orange Juice", price=99, category="Beverages", department="Bar", description="Freshly squeezed"),
-                MenuItem(id="9", name="Chocolate Cake", price=139, category="Desserts", department="Kitchen", description="Rich chocolate layer cake"),
-                MenuItem(id="10", name="Ice Cream Sundae", price=119, category="Desserts", department="Kitchen", description="Vanilla ice cream with toppings"),
+                MenuItem(id="1", name="Classic Burger", product_code="CB001", price=259, category="Mains", department="Kitchen", description="Beef patty with lettuce, tomato, cheese"),
+                MenuItem(id="2", name="Caesar Salad", product_code="CS002", price=199, category="Salads", department="Kitchen", description="Romaine lettuce, croutons, parmesan"),
+                MenuItem(id="3", name="Margherita Pizza", product_code="MP003", price=299, category="Mains", department="Kitchen", description="Fresh mozzarella, basil, tomato sauce"),
+                MenuItem(id="4", name="Fish & Chips", product_code="FC004", price=319, category="Mains", department="Kitchen", description="Beer-battered fish with crispy fries"),
+                MenuItem(id="5", name="Greek Salad", product_code="GS005", price=219, category="Salads", department="Kitchen", description="Feta, olives, cucumber, tomatoes"),
+                MenuItem(id="6", name="Pasta Carbonara", product_code="PC006", price=279, category="Mains", department="Kitchen", description="Creamy sauce with bacon and parmesan"),
+                MenuItem(id="7", name="Coca Cola", product_code="CC007", price=59, category="Beverages", department="Bar", description="330ml can"),
+                MenuItem(id="8", name="Fresh Orange Juice", product_code="FOJ008", price=99, category="Beverages", department="Bar", description="Freshly squeezed"),
+                MenuItem(id="9", name="Chocolate Cake", product_code="CHC009", price=139, category="Desserts", department="Kitchen", description="Rich chocolate layer cake"),
+                MenuItem(id="10", name="Ice Cream Sundae", product_code="ICS010", price=119, category="Desserts", department="Kitchen", description="Vanilla ice cream with toppings"),
             ]
             for item in menu_items:
                 db.session.add(item)

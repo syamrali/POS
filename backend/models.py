@@ -98,6 +98,7 @@ class MenuItem(db.Model):
     
     id = db.Column(db.String, primary_key=True)
     name = db.Column(db.String, nullable=False)
+    product_code = db.Column(db.String, nullable=False, unique=True)
     price = db.Column(db.Float, nullable=False)
     category = db.Column(db.String, nullable=False)
     department = db.Column(db.String, nullable=False)
@@ -107,6 +108,7 @@ class MenuItem(db.Model):
         return {
             'id': self.id,
             'name': self.name,
+            'productCode': self.product_code,
             'price': self.price,
             'category': self.category,
             'department': self.department,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UtensilsCrossed, TableProperties, Settings, LogOut, ShoppingCart, FileText, BarChart3 } from "lucide-react";
+import { UtensilsCrossed, TableProperties, Settings, LogOut, ShoppingCart, FileText, BarChart3, FolderPlus, Tag } from "lucide-react";
 import { Button } from "./ui/button";
 import { MenuPage } from "./MenuPage";
 import { TablesPage } from "./TablesPage";
@@ -7,12 +7,14 @@ import { SettingsPage } from "./SettingsPage";
 import { OrdersPage } from "./OrdersPage";
 import { InvoicesPage } from "./InvoicesPage";
 import { ReportsPage } from "./ReportsPage";
+import { DepartmentsPage } from "./DepartmentsPage";
+import { CategoriesPage } from "./CategoriesPage";
 
 interface POSLayoutProps {
   onLogout: () => void;
 }
 
-type PageType = "orders" | "menu" | "tables" | "invoices" | "reports" | "settings";
+type PageType = "orders" | "menu" | "departments" | "categories" | "tables" | "invoices" | "reports" | "settings";
 
 export function POSLayout({ onLogout }: POSLayoutProps) {
   const [currentPage, setCurrentPage] = useState<PageType>("orders");
@@ -20,6 +22,8 @@ export function POSLayout({ onLogout }: POSLayoutProps) {
   const navItems = [
     { id: "orders" as PageType, label: "Orders", icon: ShoppingCart },
     { id: "menu" as PageType, label: "Menu", icon: UtensilsCrossed },
+    { id: "departments" as PageType, label: "Departments", icon: FolderPlus },
+    { id: "categories" as PageType, label: "Categories", icon: Tag },
     { id: "tables" as PageType, label: "Tables", icon: TableProperties },
     { id: "invoices" as PageType, label: "Invoices", icon: FileText },
     { id: "reports" as PageType, label: "Reports", icon: BarChart3 },
@@ -32,6 +36,10 @@ export function POSLayout({ onLogout }: POSLayoutProps) {
         return <OrdersPage />;
       case "menu":
         return <MenuPage />;
+      case "departments":
+        return <DepartmentsPage />;
+      case "categories":
+        return <CategoriesPage />;
       case "tables":
         return <TablesPage />;
       case "invoices":

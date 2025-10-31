@@ -398,9 +398,15 @@ def create_menu_item():
     try:
         data = request.get_json()
         
+        # Check if product_code already exists
+        existing = MenuItem.query.filter_by(product_code=data['productCode']).first()
+        if existing:
+            return jsonify({'error': 'Product code already exists'}), 400
+        
         new_item = MenuItem(
             id=data.get('id', str(int(time.time() * 1000))),
             name=data['name'],
+            product_code=data['productCode'],
             price=data['price'],
             category=data['category'],
             department=data['department'],
@@ -424,6 +430,14 @@ def update_menu_item(item_id):
             return jsonify({'error': 'Menu item not found'}), 404
         
         data = request.get_json()
+        
+        # Check if product_code is being changed and if new code already exists
+        if 'productCode' in data and data['productCode'] != item.product_code:
+            existing = MenuItem.query.filter_by(product_code=data['productCode']).first()
+            if existing:
+                return jsonify({'error': 'Product code already exists'}), 400
+            item.product_code = data['productCode']
+        
         item.name = data.get('name', item.name)
         item.price = data.get('price', item.price)
         item.category = data.get('category', item.category)
@@ -623,7 +637,7 @@ def export_menu_template():
         
         # Create Menu Items sheet
         ws_items = wb.create_sheet("Menu Items")
-        headers = ["Item Name", "Price", "Category", "Department", "Description"]
+        headers = ["Product Code", "Item Name", "Price", "Category", "Department", "Description"]
         for col, header in enumerate(headers, start=1):
             cell = ws_items.cell(row=1, column=col, value=header)
             cell.font = Font(bold=True, color="FFFFFF")
@@ -631,18 +645,20 @@ def export_menu_template():
             cell.alignment = Alignment(horizontal="center")
         
         # Set column widths
-        ws_items.column_dimensions['A'].width = 30
-        ws_items.column_dimensions['B'].width = 15
-        ws_items.column_dimensions['C'].width = 20
+        ws_items.column_dimensions['A'].width = 20
+        ws_items.column_dimensions['B'].width = 30
+        ws_items.column_dimensions['C'].width = 15
         ws_items.column_dimensions['D'].width = 20
-        ws_items.column_dimensions['E'].width = 50
+        ws_items.column_dimensions['E'].width = 20
+        ws_items.column_dimensions['F'].width = 50
         
         # Add sample data
-        ws_items['A2'] = "Example: Chicken Burger"
-        ws_items['B2'] = 299
-        ws_items['C2'] = "Mains"
-        ws_items['D2'] = "Kitchen"
-        ws_items['E2'] = "Grilled chicken with lettuce and mayo"
+        ws_items['A2'] = "CB001"
+        ws_items['B2'] = "Example: Chicken Burger"
+        ws_items['C2'] = 299
+        ws_items['D2'] = "Mains"
+        ws_items['E2'] = "Kitchen"
+        ws_items['F2'] = "Grilled chicken with lettuce and mayo"
         
         # Save to BytesIO
         output = BytesIO()
@@ -691,26 +707,28 @@ def export_menu_data():
         
         # Export Menu Items
         ws_items = wb.create_sheet("Menu Items")
-        headers = ["Item Name", "Price", "Category", "Department", "Description"]
+        headers = ["Product Code", "Item Name", "Price", "Category", "Department", "Description"]
         for col, header in enumerate(headers, start=1):
             cell = ws_items.cell(row=1, column=col, value=header)
             cell.font = Font(bold=True, color="FFFFFF")
             cell.fill = PatternFill(start_color="ED7D31", end_color="ED7D31", fill_type="solid")
             cell.alignment = Alignment(horizontal="center")
         
-        ws_items.column_dimensions['A'].width = 30
-        ws_items.column_dimensions['B'].width = 15
-        ws_items.column_dimensions['C'].width = 20
+        ws_items.column_dimensions['A'].width = 20
+        ws_items.column_dimensions['B'].width = 30
+        ws_items.column_dimensions['C'].width = 15
         ws_items.column_dimensions['D'].width = 20
-        ws_items.column_dimensions['E'].width = 50
+        ws_items.column_dimensions['E'].width = 20
+        ws_items.column_dimensions['F'].width = 50
         
         items = MenuItem.query.all()
         for idx, item in enumerate(items, start=2):
-            ws_items[f'A{idx}'] = item.name
-            ws_items[f'B{idx}'] = item.price
-            ws_items[f'C{idx}'] = item.category
-            ws_items[f'D{idx}'] = item.department
-            ws_items[f'E{idx}'] = item.description
+            ws_items[f'A{idx}'] = item.product_code
+            ws_items[f'B{idx}'] = item.name
+            ws_items[f'C{idx}'] = item.price
+            ws_items[f'D{idx}'] = item.category
+            ws_items[f'E{idx}'] = item.department
+            ws_items[f'F{idx}'] = item.description
         
         # Save to BytesIO
         output = BytesIO()
@@ -791,12 +809,23 @@ def import_menu_data():
             ws_items = wb['Menu Items']
             for row_idx, row in enumerate(ws_items.iter_rows(min_row=2, values_only=True), start=2):
                 try:
-                    if row[0] and not str(row[0]).startswith('Example:'):
-                        name = str(row[0]).strip()
-                        price = float(row[1]) if row[1] else 0
-                        category = str(row[2]).strip() if row[2] else ''
-                        department = str(row[3]).strip() if row[3] else ''
-                        description = str(row[4]).strip() if row[4] else ''
+                    if row[1] and not str(row[1]).startswith('Example:'):
+                        product_code = str(row[0]).strip() if row[0] else ''
+                        name = str(row[1]).strip()
+                        price = float(row[2]) if row[2] else 0
+                        category = str(row[3]).strip() if row[3] else ''
+                        department = str(row[4]).strip() if row[4] else ''
+                        description = str(row[5]).strip() if row[5] else ''
+                        
+                        # Validate required fields
+                        if not product_code:
+                            stats['errors'].append(f"Row {row_idx}: Product code is required")
+                            continue
+                        
+                        # Check if product code already exists
+                        if MenuItem.query.filter_by(product_code=product_code).first():
+                            stats['errors'].append(f"Row {row_idx}: Product code '{product_code}' already exists")
+                            continue
                         
                         # Validate category and department exist
                         if category and not Category.query.filter_by(name=category).first():
@@ -810,6 +839,7 @@ def import_menu_data():
                         new_item = MenuItem(
                             id=str(int(time.time() * 1000)) + str(stats['items_added']),
                             name=name,
+                            product_code=product_code,
                             price=price,
                             category=category,
                             department=department,
